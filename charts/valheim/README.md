@@ -134,17 +134,17 @@ instances:
 `service.externalTrafficPolicy` is optional; omit it or set it to `null` to leave it unset.
 
 ### World modifiers
-Set optional world modifiers on each entry in `instances`. Each server uses its own settings. By default, no world modifier arguments are passed.
+Set optional world modifiers under `valheimDedicatedServer`. These settings apply to all instances
+in the StatefulSet and are rendered directly in its container arguments. By default, no world
+modifier arguments are passed.
 
 ```yaml
-instances:
-  - name: "ValheimServer"
-    # Include the remaining instance settings from values.yaml.
-    preset: hard
-    modifiers:
-      raids: none
-    setKeys:
-      - nomap
+valheimDedicatedServer:
+  preset: hard
+  modifiers:
+    raids: none
+  setKeys:
+    - nomap
 ```
 
 This adds `-preset hard -modifier raids none -setkey nomap` to the server arguments. A preset

@@ -25,17 +25,4 @@ data:
     {{- end }}
     {{- end }}
   {{- end }}
-    {{- $args := list }}
-    {{- with $instance.preset }}
-      {{- $args = append (append $args "-preset") . }}
-    {{- end }}
-    {{- range $modifier, $value := $instance.modifiers }}
-      {{- $args = append (append (append $args "-modifier") $modifier) $value }}
-    {{- end }}
-    {{- range $instance.setKeys }}
-      {{- $args = append (append $args "-setkey") . }}
-    {{- end }}
-    {{- if $args }}
-    set -- "$@"{{ range $args }} {{ . | toString | replace "'" "'\"'\"'" | printf "'%s'" }}{{ end }}
-    {{- end }}
   {{- end }}

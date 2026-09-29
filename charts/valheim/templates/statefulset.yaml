@@ -63,6 +63,19 @@ spec:
             - "instanceid"
             - "$(POD_NAME)"
             - "$crossPlay"
+            {{- with .Values.valheimDedicatedServer.preset }}
+            - "-preset"
+            - {{ . | quote }}
+            {{- end }}
+            {{- range $modifier, $value := .Values.valheimDedicatedServer.modifiers }}
+            - "-modifier"
+            - {{ $modifier | quote }}
+            - {{ $value | quote }}
+            {{- end }}
+            {{- range .Values.valheimDedicatedServer.setKeys }}
+            - "-setkey"
+            - {{ . | quote }}
+            {{- end }}
           env:
             - name: POD_NAME
               valueFrom:
