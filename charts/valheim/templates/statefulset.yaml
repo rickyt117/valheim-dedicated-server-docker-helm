@@ -1,7 +1,11 @@
+{{- $podAnnotations := deepCopy (.Values.podAnnotations | default dict) }}
+{{- $playerLists := include "valheim.managedPlayerLists" . | fromJson }}
+{{- $_ := set $podAnnotations "checksum/config" (include (print $.Template.BasePath "/configmap.yaml") . | sha256sum) }}
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: {{ include "valheim.fullname" . }}
+  namespace: {{ .Release.Namespace | quote }}
   labels:
     {{- include "valheim.labels" . | nindent 4 }}
 spec:
@@ -12,7 +16,7 @@ spec:
       {{- include "valheim.selectorLabels" . | nindent 6 }}
   template:
     metadata:
-      {{- with .Values.podAnnotations }}
+      {{- with $podAnnotations }}
       annotations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
@@ -104,8 +108,15 @@ spec:
           volumeMounts:
             - name: saves-directory
               mountPath: "/srv/valheim/saves"
+            {{- range $filename, $_ := $playerLists }}
+            - name: config
+              mountPath: {{ printf "/srv/valheim/saves/%s" $filename | quote }}
+              subPathExpr: {{ printf "$(POD_NAME).%s" $filename | quote }}
+              readOnly: true
+            {{- end }}
             - name: config
               mountPath: "/srv/valheim/config"
+              readOnly: true
             - name: secret
               mountPath: "/srv/valheim/secret"
       {{- with .Values.nodeSelector }}

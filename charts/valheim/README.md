@@ -28,7 +28,7 @@ Valheim installation automatically when a new image is released.
 
 ## Configuration options
 ### Security Context
-As the `pfeiffermax/valheim-dedicated-server` image runs the Rust server with an unprivileged user since V2.0.0,
+As the `pfeiffermax/valheim-dedicated-server` image runs the Valheim server with an unprivileged user since V2.0.0,
 secure default values for `podSecurityContext` and `securityContext` were added.
 ```yaml
 podSecurityContext:
@@ -93,8 +93,10 @@ startupProbe:
 ### Valheim server config
 Tweak the Valheim server config to your liking. You can add a list of server to `instances`. Please be aware that the
 configuration of resources and ports are shared by these instances.
+Start with [values.yaml](values.yaml) when configuring instances: Helm replaces the entire
+`instances` list, so include the remaining settings when using the partial examples below.
 ```yaml
-# You can choose to run multiple instances of Rust dedicated servers here.
+# You can choose to run multiple instances of Valheim dedicated servers here.
 # For a new instance add another entry to this list.
 instances:
     # Name of your server that will be visible in the Server list.
@@ -128,6 +130,71 @@ instances:
       metadata:
         annotations: {}
 ```
+
+`service.externalTrafficPolicy` is optional; omit it or set it to `null` to leave it unset.
+
+### World modifiers
+Set optional world modifiers on each entry in `instances`. Each server uses its own settings. By default, no world modifier arguments are passed.
+
+```yaml
+instances:
+  - name: "ValheimServer"
+    # Include the remaining instance settings from values.yaml.
+    preset: hard
+    modifiers:
+      raids: none
+    setKeys:
+      - nomap
+```
+
+This adds `-preset hard -modifier raids none -setkey nomap` to the server arguments. A preset
+overwrites previous modifiers, so the chart always places it before individual modifiers and
+checkbox keys. Each option can also be used independently.
+
+Valid presets are `normal`, `casual`, `easy`, `hard`, `hardcore`, `immersive`, and `hammer`.
+
+| Modifier | Valid values |
+| --- | --- |
+| `combat` | `veryeasy`, `easy`, `hard`, `veryhard` |
+| `deathpenalty` | `casual`, `veryeasy`, `easy`, `hard`, `hardcore` |
+| `resources` | `muchless`, `less`, `more`, `muchmore`, `most` |
+| `raids` | `none`, `muchless`, `less`, `more`, `muchmore` |
+| `portals` | `casual`, `hard`, `veryhard` |
+
+Valid `setKeys` entries are `nobuildcost`, `playerevents`, `passivemobs`, and `nomap`.
+
+### Player lists
+Optionally manage `adminlist.txt`, `bannedlist.txt`, and `permittedlist.txt` through Helm:
+
+```yaml
+instances:
+  - name: "ValheimServer"
+    # Include the remaining instance settings from values.yaml.
+    adminList:
+      - "PLAYER_ID_HERE"
+    bannedList: []
+    permittedList: null
+```
+
+Each entry is a quoted player ID, written on its own line. Use the ID format expected by your
+server version, as described in the [Valheim dedicated server guide](https://www.valheimgame.com/support/a-guide-to-dedicated-servers/).
+Each instance has its own list contents. Because StatefulSet pods share mount definitions,
+each list must be configured for all instances or left `null`/omitted for all instances.
+Use `[]` when an instance needs an empty managed list. Helm rejects mixed configurations.
+
+Each list defaults to `null`, leaving its file on the save volume unmanaged. An empty list (`[]`)
+mounts an empty file. A populated list mounts the specified entries. A nonempty permitted list
+restricts access to those players, so include everyone who should be able to join.
+
+Configured files are stored in the chart's ConfigMap and mounted read-only into
+`/srv/valheim/saves` using `subPathExpr` to select files by Pod name. Manage them through Helm;
+in-game ban/unban commands cannot persist changes to a Helm-managed banned list.
+Changes to the generated ConfigMap, including world modifiers and player lists, trigger a rollout
+of all instances so they receive the new settings. Password-only changes do not affect this
+checksum; restart the StatefulSet after updating passwords.
+
+Mounting a list hides any existing file of the same name on the save volume without overwriting
+it. Setting the value back to `null` removes the mount and exposes that underlying file again.
 
 ## Migrating save games to another cluster
 The server keeps its save games in `/srv/valheim/saves`, which is backed by a PersistentVolumeClaim
@@ -198,6 +265,10 @@ world data there is a `.fwl` file with the world metadata and seed, and the two 
 matching pair. The directory also holds the `.old` copies, the automatic backups produced by your
 `backups`, `backupShort` and `backupLong` settings, and the `adminlist.txt`, `bannedlist.txt` and
 `permittedlist.txt` files.
+
+Helm-managed player lists live in the ConfigMap, so the helper Pod's volume archive does not
+include those mounted files. Copy the `adminList`, `bannedList`, and `permittedList` values to
+the target release as well; files of the same names in the archive may be older, unmanaged copies.
 
 ### 4. Verify before starting the server
 Compare the checksums on both sides:

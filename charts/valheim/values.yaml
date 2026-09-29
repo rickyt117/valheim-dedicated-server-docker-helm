@@ -124,9 +124,33 @@ instances:
     backupShort: "7200"
     # Sets the interval between the subsequent automatic backups.
     backupLong: "43200"
+    # Optional world modifier preset for this instance.
+    # Valid presets: normal, casual, easy, hard, hardcore, immersive, hammer.
+    # A preset overwrites previous modifiers; modifiers and setKeys below are applied afterwards.
+    preset: ""
+    # Optional world modifiers, for example: { raids: none, resources: more }.
+    # Valid modifiers and values:
+    # combat: veryeasy, easy, hard, veryhard
+    # deathpenalty: casual, veryeasy, easy, hard, hardcore
+    # resources: muchless, less, more, muchmore, most
+    # raids: none, muchless, less, more, muchmore
+    # portals: casual, hard, veryhard
+    modifiers: {}
+    # Optional world modifier checkbox keys, for example: [nomap].
+    # Valid keys: nobuildcost, playerevents, passivemobs, nomap.
+    setKeys: []
+    # Optional Helm-managed player lists for this instance.
+    # null leaves the file on the save volume unmanaged; [] supplies an empty file.
+    # Each list must be configured for all instances or null/omitted for all instances.
+    # Entries must be quoted player IDs, one per list item.
+    # Configured files are read-only; update them through Helm, not in-game commands.
+    adminList: null
+    bannedList: null
+    permittedList: null
     # Pod specific service
     service:
       type: LoadBalancer
+      # Optional: omit or set to null to leave externalTrafficPolicy unset.
       externalTrafficPolicy: Cluster
       metadata:
         labels: {}
